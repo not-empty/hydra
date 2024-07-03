@@ -1,14 +1,32 @@
 version: '3.8'
 
 services:
-  redis-cetus:
+  hydra-redis:
     image: redis:latest
-    container_name: redis-cetus
+    container_name: hydra-redis
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    networks:
+      - hydra-network
+
+  hydra-server:
+    build:
+      context: .
+      dockerfile: ./ops/docker/dev/Dockerfile
+    container_name: hydra-server
+    depends_on:
+      - hydra-redis
+    volumes:
+      - .:/app
+    networks:
+      - hydra-network
 
 volumes:
   redis-data:
     driver: local
+
+networks:
+  hydra-network:
+    name: hydra-network

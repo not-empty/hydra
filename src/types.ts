@@ -1,4 +1,4 @@
-export interface AnalysisJob {
+export interface PoolJob<T> {
   id: string;
-  data: string;
+  data: T;
 }
