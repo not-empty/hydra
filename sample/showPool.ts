@@ -2,7 +2,7 @@ import { HydraPublisher } from '../src/publisher';
 import redisClient from '../src/services/redisClient';
 
 async function main() {
-  const publisher = new HydraPublisher({ redis: redisClient });
+  const publisher = new HydraPublisher({ prefix: 'hydra_analyse', redis: redisClient });
 
   const pool = await publisher.showPool();
 
