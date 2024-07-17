@@ -12,9 +12,3 @@ export const POOL_MAX_CONCURRENT = process.env.POOL_MAX_CONCURRENT ? parseInt(pr
 export const POOL_INTERVAL = process.env.POOL_INTERVAL ? parseInt(process.env.POOL_INTERVAL, 10) : 100;
 
 export const JOB_UPDATE_EVENT: string = `${POOL_PREFIX}_job_update`;
-export enum JobUpdateEvent {
-  STARTED='STARTED',
-  FINISHED='FINISHED',
-  ADDED='ADDED',
-}
-

@@ -1,6 +1,6 @@
-import { JOB_UPDATE_EVENT, JobUpdateEvent, POOL_EXECUTING, POOL_INITIALIZED, POOL_JOB, POOL_PENDING } from "./config/pool";
+import { JOB_UPDATE_EVENT, POOL_EXECUTING, POOL_INITIALIZED, POOL_JOB, POOL_PENDING } from "./config/pool";
 import redisClient from "./services/redisClient";
-import { PoolJob } from "./types";
+import { JobUpdateEvent, JobUpdateEventType, PoolJob } from "./types";
 
 export async function addInitializedJob(jobId: string): Promise<void> {
   await redisClient.sAdd(POOL_INITIALIZED, jobId);
@@ -58,6 +58,11 @@ export async function delJob(jobId: string): Promise<void> {
   await redisClient.del(`${POOL_JOB}:${jobId}`);
 }
 
-export async function sendJobUpdateEvent(event: JobUpdateEvent): Promise<void> {
-  await redisClient.publish(JOB_UPDATE_EVENT, event);
+export async function sendJobUpdateEvent(type: JobUpdateEventType, jobId: string): Promise<void> {
+  const event: JobUpdateEvent = {
+    type,
+    jobId
+  };
+
+  await redisClient.publish(JOB_UPDATE_EVENT, JSON.stringify(event));
 }

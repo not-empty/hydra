@@ -1,7 +1,6 @@
 import Redis, { RedisClientOptions, RedisClientType, RedisModules } from 'redis';
 import { ulid } from 'ulid';
-import { PoolJob } from './types';
-import { JobUpdateEvent } from './config/pool';
+import { PoolJob, JobUpdateEventType, JobUpdateEvent } from './types';
 
 type RedisClientGeneric = RedisClientType<any, any, any>;
 type RedisOptionsGeneric = RedisClientOptions<any, any, any>;
@@ -63,7 +62,11 @@ export class HydraPublisher<R extends RedisClientGeneric, O extends RedisOptions
     };
 
     await this.redisClient.lPush(this.keys.POOL_PENDING, JSON.stringify(job));
-    await this.redisClient.publish(this.keys.JOB_UPDATE_EVENT, JobUpdateEvent.ADDED);
+    const event: JobUpdateEvent = {
+      type: JobUpdateEventType.ADDED,
+      jobId: job.id
+    }
+    await this.redisClient.publish(this.keys.JOB_UPDATE_EVENT, JSON.stringify(event));
     return job.id;
   }
 
@@ -72,9 +75,37 @@ export class HydraPublisher<R extends RedisClientGeneric, O extends RedisOptions
     await this.redisClient.del(`${this.keys.POOL_JOB}:${jobId}`);
     await this.redisClient.sRem(this.keys.POOL_EXECUTING, jobId);
     await this.redisClient.sRem(this.keys.POOL_INITIALIZED, jobId);
-    await this.redisClient.publish(this.keys.JOB_UPDATE_EVENT, JobUpdateEvent.FINISHED);
+
+    const event: JobUpdateEvent = {
+      type: JobUpdateEventType.FINISHED,
+      jobId
+    }
+    await this.redisClient.publish(this.keys.JOB_UPDATE_EVENT, JSON.stringify(event));
 
     console.log(`Job ${jobId} removed from executing list`);
+  }
+
+  public async getJob<T>(jobId: string): Promise<PoolJob<T> | null> {
+    const job = await this.redisClient.get(`${this.keys.POOL_JOB}:${jobId}`);
+  
+    if (!job) {
+      return null;
+    }
+  
+    return JSON.parse(job) as PoolJob<T>;
+  }
+
+  public async sendToPending(jobId: string) {
+    const job = await this.getJob(jobId);
+
+    if (!job) {
+      return;
+    }
+
+    await this.finishJob(jobId);
+    await this.redisClient.lPush(this.keys.POOL_PENDING, JSON.stringify(job));
+
+    console.log(`Job ${jobId} send to pending`);
   }
 
   public async showPool(): Promise<PoolList> {
